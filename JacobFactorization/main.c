@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#define sizeOfMatrix 15000
+#define sizeOfMatrix 10000
 
 int main(void)
 {
