@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <omp.h>
-#define sizeOfMatrix 12000
+#define sizeOfMatrix 10000
 
 int main(int argc, char *argv[])
 {
@@ -43,24 +43,24 @@ int main(int argc, char *argv[])
 	printf("Jacob Factorization\n");
 
 	printf("Generacja macierzy A i b\n");
-	#pragma omp parallel private (i,j) shared (A,b,licz,sum)  num_threads (4)
-	{
-		id_watku = omp_get_thread_num ();
-		printf(" Moj watek ma identyfikator : %d\n", id_watku);
-		#pragma omp for schedule (static)
+	//#pragma omp parallel private (i,j) shared (A,b,licz,sum)  num_threads (4)
+//	{
+	//	id_watku = omp_get_thread_num ();
+	//	printf(" Moj watek ma identyfikator : %d\n", id_watku);
+	//	#pragma omp for schedule (static)
 		for(i=0;i<sizeOfMatrix;i++)
 		{
 			b[i]= rand()%10-5;
 		}
 
 		// macierz A
-		#pragma omp for schedule (static)
+	//	#pragma omp for schedule (static)
 		for(j=0; j<sizeOfMatrix; j++)
 		{
 			for(i=0;i<sizeOfMatrix;i++)
 				A[i][j]=0;
 		}
-		#pragma omp for schedule (static)
+	//	#pragma omp for schedule (static)
 		for(j=0; j<sizeOfMatrix; j++)
 		{
 			for(i=j+1;i<sizeOfMatrix;i++)
@@ -77,7 +77,7 @@ int main(int argc, char *argv[])
 			}
 		}
 
-		#pragma omp for schedule (static)
+	//	#pragma omp for schedule (static)
 		for(j=0; j<sizeOfMatrix; j++)
 		{
 			for(i=0;i<sizeOfMatrix;i++)
@@ -88,14 +88,14 @@ int main(int argc, char *argv[])
 			A[j][j]=sum+rand()%20+1;
 			sum=0;
 		}
-	}//omp 1
+//	}//omp 1
 	printf("Wstawilem liczb: %d\n", licz);
 	printf("Przygotowanie macierzy D,M,sumLU,Mx,N,x,x_old\n");
 
 	time_t start = time(NULL);
-	#pragma omp parallel private (i,j) shared (A,b,D,M,sumLU,x,x_old,N,Mx)  num_threads (4)
+	//#pragma omp parallel private (i,j) shared (A,b,D,M,sumLU,x,x_old,N,Mx)  num_threads (4)
 	{
-		#pragma omp for schedule (static)
+	//#pragma omp for schedule (static)
     	for(i=0;i<sizeOfMatrix;i++)
     	{
     		for(j=0;j<sizeOfMatrix;j++)
@@ -110,21 +110,21 @@ int main(int argc, char *argv[])
     		N[i] = 0;
     		x_old[i]=0;
     	}
-		#pragma omp for schedule (static)
+	//	#pragma omp for schedule (static)
     	for(i=0;i<sizeOfMatrix;i++)
     		D[i][i] = A[i][i];
 
-		#pragma omp for schedule (static)
+	//	#pragma omp for schedule (static)
     	for(i=0;i<sizeOfMatrix;i++)
     		N[i] = 1/D[i][i];
 
-		#pragma omp for schedule (static)
+	//	#pragma omp for schedule (static)
     	for(i=0;i<sizeOfMatrix;i++)
     		for(j=0;j<sizeOfMatrix;j++)
     			if(i!=j)
-    				sumLU[i][j] =A[i][j];
+			    sumLU[i][j] =A[i][j];
 
-		#pragma omp for schedule (static)
+	//	#pragma omp for schedule (static)
     	for(i=0;i<sizeOfMatrix;i++)
     		for(j=0;j<sizeOfMatrix;j++)
     		{
@@ -137,21 +137,23 @@ int main(int argc, char *argv[])
     	printf("Poczatek obliczen\n");
     	while(iter>0)
     	{
-    		for (i=0; i<sizeOfMatrix; i++)
+	//	#pragma omp for schedule (static)
+    		cilk_for/*for*/(i=0; i<sizeOfMatrix; i++)
     		{
     			x[i]= N[i]*b[i];
-    			for (j=0; j<sizeOfMatrix; j++)
+    			for(j=0; j<sizeOfMatrix; j++)
     			{
     				Mx[i] = M[i][j]*x_old[j];
     				x[i] +=Mx[i];
     			//	printf("i=%d, j=%d", i,j);
     			}
     		}
-    		for (i=0; i<sizeOfMatrix; i++)
+    	//	#pragma omp for schedule (static)
+    		cilk_for/*for*/ (i=0; i<sizeOfMatrix; i++)
     			x_old[i] = x[i];
     		iter--;
     	}
-	}// omp2
+  }// omp2
     printf("Czas trwania: %.2f\n", (double)(time(NULL) - start));
 
     printf("Wynik\n");
@@ -163,7 +165,7 @@ int main(int argc, char *argv[])
     {
     	for(i=0;i<sizeOfMatrix;i++)
     		dbsum += A[i][j]*x[i];
-    //	printf("Wyszlo = %.15f, a mialo wyjsc %d\n", dbsum, b[j]);
+    	printf("Wyszlo = %.15f, a mialo wyjsc %d\n", dbsum, b[j]);
     	dbsum=0;
     }
     for(i = 0; i < sizeOfMatrix; i++)
