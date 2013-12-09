@@ -1,15 +1,118 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <omp.h>
+#include <math.h>
+#include <time.h>
+
+
 #define sizeOfMatrix 10000
+
+void generateMatrixA(int** A, int* b)
+{
+	int i,j, licz=0;
+	int sum=0;
+		for(i=0;i<sizeOfMatrix;i++)
+		{
+			b[i]= rand()%10-5;
+		}
+
+		// zerujemy macierz A
+		for(j=0; j<sizeOfMatrix; j++)
+		{
+			for(i=0;i<sizeOfMatrix;i++)
+				A[i][j]=0;
+		}
+		for(j=0; j<sizeOfMatrix; j++)
+		{
+			for(i=j+1;i<sizeOfMatrix;i++)
+			{
+				if(i!=j)
+				{
+					A[j][i]=A[i][j] = rand()%10;
+					//ile pozycji przesuwamy sie w wierszu nie wpisujac nic do niego
+
+					i+=(rand()%(sizeOfMatrix/3))+1;
+					// zlicznie liczby wstawianych znakow
+					licz++;
+				}
+			}
+		}
+
+		for(j=0; j<sizeOfMatrix; j++)
+		{
+			for(i=0;i<sizeOfMatrix;i++)
+			{
+				sum +=A[i][j];
+			}
+			// na diagonali niech będzie od 1 do 19 więcej niż suma w wierszu, wtedy bedzie macierz dominowala diagonalnie wierszowo
+			A[j][j]=sum+rand()%20+1;
+			sum=0;
+		}
+	printf("Wstawilem liczb: %d\n", licz);
+	return ;
+}
+
+void jacobFactorization(int** A, double** D, double** M, double** sumLU, double* x, double* x_old, double* Mx, double* N, int* b)
+{
+	int i,j,iter=50;
+	printf("Faktoryzacja\n");
+
+	    	for(i=0;i<sizeOfMatrix;i++)
+	    	{
+	    		for(j=0;j<sizeOfMatrix;j++)
+	    		{
+	    			D[i][j] = 0;
+	    			M[i][j] = 0;
+	    			sumLU[i][j] = 0;
+	    		}
+	    		x[i]=0;
+	    		x_old[i]=0;
+	    		Mx[i]=0;
+	    		N[i] = 0;
+	    		x_old[i]=0;
+	    	}
+	    	for(i=0;i<sizeOfMatrix;i++)
+	    		D[i][i] = A[i][i];
+
+	    	for(i=0;i<sizeOfMatrix;i++)
+	    		N[i] = 1/D[i][i];
+
+	    	for(i=0;i<sizeOfMatrix;i++)
+	    		for(j=0;j<sizeOfMatrix;j++)
+	    			if(i!=j)
+				    sumLU[i][j] =A[i][j];
+
+	    	for(i=0;i<sizeOfMatrix;i++)
+	    		for(j=0;j<sizeOfMatrix;j++)
+	    		{
+	    			M[i][j]=-(sumLU[i][j]*N[i]);
+	    		}
+
+	    	printf("Poczatek obliczen\n");
+	    	    	while(iter>0)
+	    	    	{
+	    	    		for(i=0; i<sizeOfMatrix; i++)
+	    	    		{
+	    	    			x[i]= N[i]*b[i];
+	    	    			for(j=0; j<sizeOfMatrix; j++)
+	    	    			{
+	    	    				Mx[i] = M[i][j]*x_old[j];
+	    	    				x[i] +=Mx[i];
+	    	    			}
+	    	    		}
+	    	    		for(i=0; i<sizeOfMatrix; i++)
+	    	    			x_old[i] = x[i];
+	    	    		iter--;
+	    	    	}
+}
 
 int main(int argc, char *argv[])
 {
-	int  i=0, j=0, sum=0, licz=0;
-	int iter;
-	int th_id, nthreads;
-	int liczba_watkow , id_watku ;
-	double dbsum = 0;
+	printf("Jacob Factorization\n");
+	int  i=0, j=0;
+	double dbsum = 0, error = 0, bladKoncowy=0, bladLaczny=0;
+	double czasLaczny=0;
+	printf("Inicjalizacja macierzy\n");
 
 	double* x = malloc(sizeOfMatrix * sizeof(double));
 	double* x_old = malloc(sizeOfMatrix * sizeof(double));
@@ -17,10 +120,12 @@ int main(int argc, char *argv[])
 	double* N = malloc(sizeOfMatrix * sizeof(double));
 	int * b = malloc(sizeOfMatrix * sizeof(int *));
 
-	int** A = malloc(sizeOfMatrix * sizeof(int *));
+	int ** A = malloc(sizeOfMatrix * sizeof(int *));
 	double ** D = malloc(sizeOfMatrix * sizeof(double *));
 	double ** M = malloc(sizeOfMatrix * sizeof(double *));
 	double ** sumLU = malloc(sizeOfMatrix * sizeof(double *));
+
+	int counter=0;
 
 	for(i = 0; i < sizeOfMatrix; i++)
 	{
@@ -39,135 +144,38 @@ int main(int argc, char *argv[])
     	fprintf(stderr, "out of memory\n");
     }
 
-
-	printf("Jacob Factorization\n");
-
-	printf("Generacja macierzy A i b\n");
-	//#pragma omp parallel private (i,j) shared (A,b,licz,sum)  num_threads (4)
-//	{
-	//	id_watku = omp_get_thread_num ();
-	//	printf(" Moj watek ma identyfikator : %d\n", id_watku);
-	//	#pragma omp for schedule (static)
-		for(i=0;i<sizeOfMatrix;i++)
-		{
-			b[i]= rand()%10-5;
-		}
-
-		// macierz A
-	//	#pragma omp for schedule (static)
-		for(j=0; j<sizeOfMatrix; j++)
-		{
-			for(i=0;i<sizeOfMatrix;i++)
-				A[i][j]=0;
-		}
-	//	#pragma omp for schedule (static)
-		for(j=0; j<sizeOfMatrix; j++)
-		{
-			for(i=j+1;i<sizeOfMatrix;i++)
-			{
-				if(i!=j)
-				{
-					A[j][i]=A[i][j] = rand()%10;
-					//			printf("Wstawiam: %d\n", A[i][j]);
-					//ile pozycji przesuwamy sie w wierszu nie wpisujac nic do niego
-					i+=(rand()%(sizeOfMatrix/3))+1;
-					// zlicznie liczby wstawianych znakow
-					licz++;
-				}
-			}
-		}
-
-	//	#pragma omp for schedule (static)
-		for(j=0; j<sizeOfMatrix; j++)
-		{
-			for(i=0;i<sizeOfMatrix;i++)
-			{
-				sum +=A[i][j];
-			}
-			// na diagonali niech będzie od 1 do 19 więcej niż suma w wierszu, wtedy bedzie macierz dominowala diagonalnie wierszowo
-			A[j][j]=sum+rand()%20+1;
-			sum=0;
-		}
-//	}//omp 1
-	printf("Wstawilem liczb: %d\n", licz);
-	printf("Przygotowanie macierzy D,M,sumLU,Mx,N,x,x_old\n");
-
-	time_t start = time(NULL);
-	//#pragma omp parallel private (i,j) shared (A,b,D,M,sumLU,x,x_old,N,Mx)  num_threads (4)
-	{
-	//#pragma omp for schedule (static)
-    	for(i=0;i<sizeOfMatrix;i++)
-    	{
-    		for(j=0;j<sizeOfMatrix;j++)
-    		{
-    			D[i][j] = 0;
-    			M[i][j] = 0;
-    			sumLU[i][j] = 0;
-    		}
-    		x[i]=0;
-    		x_old[i]=0;
-    		Mx[i]=0;
-    		N[i] = 0;
-    		x_old[i]=0;
-    	}
-	//	#pragma omp for schedule (static)
-    	for(i=0;i<sizeOfMatrix;i++)
-    		D[i][i] = A[i][i];
-
-	//	#pragma omp for schedule (static)
-    	for(i=0;i<sizeOfMatrix;i++)
-    		N[i] = 1/D[i][i];
-
-	//	#pragma omp for schedule (static)
-    	for(i=0;i<sizeOfMatrix;i++)
-    		for(j=0;j<sizeOfMatrix;j++)
-    			if(i!=j)
-			    sumLU[i][j] =A[i][j];
-
-	//	#pragma omp for schedule (static)
-    	for(i=0;i<sizeOfMatrix;i++)
-    		for(j=0;j<sizeOfMatrix;j++)
-    		{
-    			M[i][j]=-(sumLU[i][j]*N[i]);
-    		}
-
-
-    	iter=50;
-
-    	printf("Poczatek obliczen\n");
-    	while(iter>0)
-    	{
-	//	#pragma omp for schedule (static)
-    		cilk_for/*for*/(i=0; i<sizeOfMatrix; i++)
-    		{
-    			x[i]= N[i]*b[i];
-    			for(j=0; j<sizeOfMatrix; j++)
-    			{
-    				Mx[i] = M[i][j]*x_old[j];
-    				x[i] +=Mx[i];
-    			//	printf("i=%d, j=%d", i,j);
-    			}
-    		}
-    	//	#pragma omp for schedule (static)
-    		cilk_for/*for*/ (i=0; i<sizeOfMatrix; i++)
-    			x_old[i] = x[i];
-    		iter--;
-    	}
-  }// omp2
-    printf("Czas trwania: %.2f\n", (double)(time(NULL) - start));
-
-    printf("Wynik\n");
-    //for (i=0; i<sizeOfMatrix; i++)
-   //    printf("x[%d] = %f\n", (i+1), x_old[i]);
-
-    printf("Sprawdzam!");
-    for(j=0;j<sizeOfMatrix;j++)
+    for (counter=0;counter<10;counter++)
     {
-    	for(i=0;i<sizeOfMatrix;i++)
-    		dbsum += A[i][j]*x[i];
-    	printf("Wyszlo = %.15f, a mialo wyjsc %d\n", dbsum, b[j]);
-    	dbsum=0;
-    }
+    	printf("Iteracja %d\n", counter+1);
+		printf("Generacja macierzy A i b\n");
+		generateMatrixA(A, b);
+		printf("Przygotowanie macierzy D,M,sumLU,Mx,N,x,x_old\n");
+
+		time_t start = time(NULL);
+		jacobFactorization(A, D, M, sumLU, x, x_old, Mx, N, b);
+		czasLaczny+=(double)(time(NULL) - start);
+	    printf("Czas trwania: %.2f\n", (double)(time(NULL) - start));
+
+
+
+		printf("Sprawdzam!");
+		for(j=0;j<sizeOfMatrix;j++)
+		{
+			for(i=0;i<sizeOfMatrix;i++)
+			{
+				dbsum += A[i][j]*x[i];
+			}
+			error += pow( dbsum-b[j], 2);
+			dbsum=0;
+		}
+		bladLaczny+=bladKoncowy=sqrt(error);
+		printf("Blad : %f\n", bladKoncowy);
+		if(bladKoncowy>0.1)
+			 printf("Blad obliczen jest za duzy!\n");
+	}//for
+    printf("Sredni czas : %f\n", czasLaczny/counter);
+    printf("Sredni blad : %f\n", bladLaczny/counter);
+
     for(i = 0; i < sizeOfMatrix; i++)
     {
     	free(A[i]);
