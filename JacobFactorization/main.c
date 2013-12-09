@@ -7,7 +7,7 @@
 
 #define sizeOfMatrix 10000
 
-void generateMatrixA(int** A, int* b)
+void generateMatrixA(double** A, double* b)
 {
 	int i,j, licz=0;
 	int sum=0;
@@ -52,7 +52,7 @@ void generateMatrixA(int** A, int* b)
 	return ;
 }
 
-void jacobFactorization(int** A, double** D, double** M, double** sumLU, double* x, double* x_old, double* Mx, double* N, int* b)
+void jacobFactorization(double** A, double** D, double** M, double** sumLU, double* x, double* x_old, double* Mx, double* N, double* b)
 {
 	int i,j,iter=50;
 	printf("Faktoryzacja\n");
@@ -118,9 +118,9 @@ int main(int argc, char *argv[])
 	double* x_old = malloc(sizeOfMatrix * sizeof(double));
 	double* Mx = malloc(sizeOfMatrix * sizeof(double));
 	double* N = malloc(sizeOfMatrix * sizeof(double));
-	int * b = malloc(sizeOfMatrix * sizeof(int *));
+	double * b = malloc(sizeOfMatrix * sizeof(double *));
 
-	int ** A = malloc(sizeOfMatrix * sizeof(int *));
+	double ** A = malloc(sizeOfMatrix * sizeof(double *));
 	double ** D = malloc(sizeOfMatrix * sizeof(double *));
 	double ** M = malloc(sizeOfMatrix * sizeof(double *));
 	double ** sumLU = malloc(sizeOfMatrix * sizeof(double *));
@@ -129,7 +129,7 @@ int main(int argc, char *argv[])
 
 	for(i = 0; i < sizeOfMatrix; i++)
 	{
-        A[i] = malloc(sizeOfMatrix * sizeof(int));
+        A[i] = malloc(sizeOfMatrix * sizeof(double));
 		D[i] = malloc(sizeOfMatrix * sizeof(double));
 		M[i] = malloc(sizeOfMatrix * sizeof(double));
 		sumLU[i] = malloc(sizeOfMatrix * sizeof(double));
