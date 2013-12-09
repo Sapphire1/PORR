@@ -10,3 +10,8 @@ openmp:	mainOpenMP.c
 cilk:	mainCilk.c
 	/home/lzmuda/cilkplus-install/bin/gcc -fcilkplus -lcilkrts -o cilk mainCilk.c -lm
 
+all:	cilk openmp vector main
+
+clean:
+	rm -rf *.o cilk openmp vector main
+
