@@ -1,12 +1,5 @@
-/*
- * DynamicMemory.h
- *
- *  Created on: Dec 8, 2013
- *      Author: ja
- */
-
-#ifndef AUXILIARYFUNCTIONS_H_
-#define AUXILIARYFUNCTIONS_H_
+#ifndef AUXILIARYFUNCTIONSV_H_
+#define AUXILIARYFUNCTIONSV_H_
 
 
 double *allocade1DArray(int size);

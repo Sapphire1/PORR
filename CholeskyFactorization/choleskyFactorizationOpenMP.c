@@ -1,57 +1,71 @@
+#include <omp.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
 #include <time.h>
-#include "auxiliaryFunctions.h"
+#include "auxiliaryFunctionsOpenMP.h"
+#include "choleskyFactorizationOpenMP.h"
 
-void cholesky(int size, double** inputMatrix, double** matrixL) {
+
+void choleskyParallel(int size, double** inputMatrix, double **matrixL) {
 	double tempSum, partOfResult;
 	int k, i, j;
 
-	for(i = 0; i < size; i++) {
-		for(j = i; j < size; j++) {
-			/*Część wspólna obliczeń: zarówno dla elementów na przekątnej jaki i poza*/
+	for(i=0; i < size; i++) {
+
+		/*obliczanie elementu w wierszu na przekątnej*/
+		tempSum = 0;
+
+		#pragma omp parallel for schedule (static) private(k) firstprivate(i)
+		for(k = 0; k < i; k++) {
+			tempSum += matrixL[k][i] * matrixL[k][i];
+		}
+
+		partOfResult = inputMatrix[i][i] - tempSum;
+		matrixL[i][i] = sqrt(partOfResult);
+
+
+		/*obliczanie elementów poza przekątną*/
+		#pragma omp parallel for schedule (static) private(j, k, partOfResult, tempSum) firstprivate(i)
+		for(j = i + 1; j < size; j++) {
 			tempSum = 0;
 			for(k = 0; k < i; k++) {
 				tempSum += matrixL[k][i] * matrixL[k][j];
 			}
 
 			partOfResult = inputMatrix[i][j] - tempSum;
-
-			if(i == j) {/*na przekatnej*/
-				matrixL[i][j] = sqrt(partOfResult);
-			}
-			else {/*(i != j) poza przekątną*/
-				matrixL[i][j] = partOfResult / matrixL[i][i];
-			}
+			matrixL[i][j] = partOfResult / matrixL[i][i];
 		}
 	}
 }
 
-void forwardSolutionPhase(int size, double **factorizedMatrix, double *b, double *result) {
+void forwardSolutionPhaseParallel(int size, double **factorizedMatrix, double *b, double *result) {
 	int i, j;
 	double tempSum;
 
 	for(i = 0; i < size; i++) {
 
 		tempSum = 0;
+
+		#pragma omp parallel for schedule (static) private(j) firstprivate(i)
 		for(j = 0; j < i; j++) {
-
 			tempSum += factorizedMatrix[i][j] * result[j];
-
 		}
 
 		result[i] = (b[i] - tempSum)/factorizedMatrix[i][i];
 	}
 }
 
-void backwardSolutionPhase(int size, double** factorizedMatrix, double* y, double *result) {
+void backwardSolutionPhaseParallel(int size, double** factorizedMatrix, double* y, double *result) {
 	int i, j;
 	double tempSum;
+
 
 	for(i = size - 1; i >= 0; i--) {
 
 		tempSum = 0;
+
+		#pragma omp parallel for firstprivate(i)  private(j) schedule (static)
 		for(j = size - 1; j > i; j--) {
 			tempSum += factorizedMatrix[i][j] * result[j];
 		}
@@ -61,9 +75,10 @@ void backwardSolutionPhase(int size, double** factorizedMatrix, double* y, doubl
 	}
 }
 
-void matrixTransposition(int size, double** inputMatrix, double **transposed) {
+void matrixTranspositionParallel(int size, double** inputMatrix, double **transposed) {
 	int i,j;
 
+	#pragma omp for schedule (static) private(i, j)
 	for(i = 0; i < size; i++) {
 		for(j = 0; j < size; j++) {
 			transposed[i][j] = inputMatrix[j][i];
@@ -71,35 +86,33 @@ void matrixTransposition(int size, double** inputMatrix, double **transposed) {
 	}
 }
 
-
-
-double runAlgorithmCholesky(double **inputMatrix, double *b, int size, double *x) {
+double runAlgorithmCholeskyParallel(double **inputMatrix, double *b, int size, double *x) {
 	double **factorizedMatrix = allocate2DArray(size, size);
 	double **factorizedMatrixTrans = allocate2DArray(size, size);
 	double *y = allocade1DArray(size);
 	double timeConsumed = 0;
 
-
+	#pragma omp set dynamic(1);
 	time_t start = time(NULL);//POMIAR CZASU START
 
-	cholesky(size, inputMatrix, factorizedMatrix);
-
+	choleskyParallel(size, inputMatrix, factorizedMatrix);
+    //double **factorizedM = matrixTransposition(size, factorizedMT);
     //printf("Sfaktoryzowana  macierz Choleskiego (U): \n");
     //print2DArray(factorizedMatrix, size, size);
 
 
-    matrixTransposition(size, factorizedMatrix, factorizedMatrixTrans);
+    matrixTranspositionParallel(size, factorizedMatrix, factorizedMatrixTrans);
 
     //printf("Sfaktoryzowana transponowana macierz Choleskiego (U): \n");
     //print2DArray(factorizedMatrixTrans, size, size);
 
 
-    forwardSolutionPhase(size, factorizedMatrixTrans, b, y);
+    forwardSolutionPhaseParallel(size, factorizedMatrixTrans, b, y);
     //printf("\nWynik po forwardSolutionPhase: \n");
     //print1DArray(y, size);
 
 
-    backwardSolutionPhase(size, factorizedMatrix, y, x);
+    backwardSolutionPhaseParallel(size, factorizedMatrix, y, x);
     //printf("\nWynik po backwardSolutionPhase: \n");
     //print1DArray(x, size);
 

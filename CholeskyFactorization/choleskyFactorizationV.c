@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <time.h>
-#include "auxiliaryFunctions.h"
+#include "auxiliaryFunctionsV.h"
 
 void cholesky(int size, double** inputMatrix, double** matrixL) {
 	double tempSum, partOfResult;

@@ -1,6 +1,6 @@
 
-#ifndef CHOLESKYFACTORIZATIONPARALEL_H_
-#define CHOLESKYFACTORIZATIONPARALEL_H_
+#ifndef CHOLESKYFACTORIZATIONV_H_
+#define CHOLESKYFACTORIZATIONV_H_
 
 void cholesky(int size, double** inputMatrix, double** matrixL);
 
@@ -13,4 +13,4 @@ void matrixTransposition(int size, double** inputMatrix, double **transposed);
 double runAlgorithmCholesky(double **inputMatrix, double *b, int size, double *x);
 
 
-#endif /* CHOLESKYFACTORIZATIONPARALEL_H_ */
+#endif /* CHOLESKYFACTORIZATIONV_H_ */

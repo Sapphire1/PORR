@@ -1,12 +1,5 @@
-/*
- * DynamicMemory.h
- *
- *  Created on: Dec 8, 2013
- *      Author: ja
- */
-
-#ifndef AUXILIARYFUNCTIONS_H_
-#define AUXILIARYFUNCTIONS_H_
+#ifndef AUXILIARYFUNCTIONSOPENMP_H_
+#define AUXILIARYFUNCTIONSOPENMP_H_
 
 
 double *allocade1DArray(int size);
@@ -19,4 +12,4 @@ void print1DArray(double *A, int size);
 void checkSolution(double** matrixA, double* matrixX, double* matrixB, int size);
 
 void matrixGeneration(int sizeOfMatrix, double *b, double **A);
-#endif /* AUXILIARYFUNCTIONS_H_*/
+#endif /* AUXILIARYFUNCTIONS_H_OPENMP*/

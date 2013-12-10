@@ -1,6 +1,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include "auxiliaryFunctionsV.h"
+
 void print2DArray(double **A, int rowsNum,int colsNum)
 {
     printf("\n");
