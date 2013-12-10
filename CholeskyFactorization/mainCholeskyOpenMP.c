@@ -8,7 +8,7 @@
 
 void runAlgorithm(double **A, double *b, int problemSize) {
 	double *x,*times;
-	double timeConsumed=0, meanTime=0, timeSum=0, dbsum=0, SumError=0, *R, meanError = 0;
+	double meanTime=0, timeSum=0, dbsum=0, SumError=0, *R, meanError = 0;
 	int i, j, k;
 
 	times = allocade1DArray(REPEAT);
@@ -45,8 +45,8 @@ void runAlgorithm(double **A, double *b, int problemSize) {
 	meanError = SumError/REPEAT;
 	meanTime = timeSum/REPEAT;
 
-	printf("Czas wykonania algorytmu : %f \n",timeConsumed);
-	printf("Średni błąd : %f \n",meanError);
+	printf("Średni czas wykonania algorytmu : %4.8f\n",meanTime);
+	printf("Średni błąd : %4.8f \n",meanError);
 
 	free(times);
 	free(R);
