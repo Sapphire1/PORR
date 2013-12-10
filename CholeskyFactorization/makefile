@@ -7,6 +7,8 @@ OPEN_MP_FLAGS = -fopenmp
 VECTORIZATION_FLAGS = -O2 -msse3 -ftree-vectorize -ftree-vectorizer-verbose=6 
 CLICK_FLAGS = -fcilkplus -lcilkrts -o cilk
 
+all: choleskySeq choleskyOpenmp choleskyVec
+
 choleskySeq: $(OBJECTS)
 	$(CC) -o $@ $^ $(LIBS) 
 
