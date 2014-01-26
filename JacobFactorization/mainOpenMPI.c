@@ -6,7 +6,7 @@
 
 
 //#define sizeOfMatrix 4096
-#define sizeOfMatrix 4000
+#define sizeOfMatrix 40
 #define iterations 50
 void jacobFactorization(double** A, double** D, double** M, double** sumLU, double* x, double* x_old, double* Mx, double* N, double* b, int startRow, int endRow)
 {
@@ -84,7 +84,7 @@ void generateMatrixA(double** A, double* b)
 			A[j][j]=sum+rand()%20+1;
 			sum=0;
 		}
-		printf("Wstawilem liczb: %d\n", licz);
+	//	printf("Wstawilem liczb: %d\n", licz);
 		return ;
 }
 
@@ -139,18 +139,12 @@ int main(int argc, char *argv[])
 	}
 	if (rank == 0) 
 	{
-		printf("Master\n");
+		//printf("Master\n");
 		for (counter=0;counter<1;counter++)
 		{
 			rows2Fill = sizeOfMatrix/numprocs;
 			generateMatrixA(A, b);
-			for(i=0;i<sizeOfMatrix;i++)
-			{
-			  for(j=0;j<sizeOfMatrix;j++)
-			    printf("A[%d][%d]=%f\t", i,j, A[i][j]);
 			
-			 printf("\n");
-			}
 			for(i = 1; i < numprocs; i++) 
 			{	
 				sended=0;
@@ -185,35 +179,28 @@ int main(int argc, char *argv[])
 				//printf("Czekanie, kolejny obieg w master\n");
 				for(i = 1; i < numprocs; i++) 
 				{
-					printf("Kolejna iteracja dla procesu %d\n", i);
+					//printf("Kolejna iteracja dla procesu %d\n", i);
 					MPI_Recv(x_temp, sizeOfMatrix, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, &stat);
-					for(j=0; j<sizeOfMatrix;j++)
-					  printf("x_temp[%d]%f\t", j, x_temp[j]);
-					printf("\n");
+					
 					// przepisujemy dane z innych procesow
 					for(j=i*rows2Fill;j<(i+1)*rows2Fill;j++)
 					{	
-					      printf("Przepisuje to %f\n", x_temp[j]);
 					      x_old[j]=x_temp[j];
 					}
 				}
-				for(j=0; j<sizeOfMatrix;j++)
-					  printf("x_old_master[%d]%f\t", j, x_old[j]);
-				printf("\n");
+				
 				// tutaj wyslanie wartosci calego wektora x_old
 				
 				for(i = 1; i < numprocs; i++) 
 					MPI_Send(x_old, sizeOfMatrix, MPI_DOUBLE, i, 0, MPI_COMM_WORLD);
-				printf("Sprawdzam!");
 				for(j=0;j<sizeOfMatrix;j++)
 				{
 					for(i=0;i<sizeOfMatrix;i++)
 					{
 						dbsum += A[i][j]*x_old[i];
 					}
-					printf("Suma wyszla %f, a powinno byc %f", dbsum, b[j]);
+					
 					error += pow( dbsum-b[j], 2);
-					printf("error = %f\n", error);
 					dbsum=0;
 				}
 				bladKoncowy=sqrt(error);
@@ -228,7 +215,6 @@ int main(int argc, char *argv[])
 	  }
 	  else
 	  {	
-		printf("Slave %d\n", rank);
 		rows2Fill = sizeOfMatrix/numprocs;		
 		received=0;
 		while(received<rows2Fill)
@@ -254,7 +240,6 @@ int main(int argc, char *argv[])
 				for(i=rank*rows2Fill;i<(rank+1)*rows2Fill;i++)
 				{
 				    x_old[i] = x[i];
-				    printf("Slave x_old[%d] = %f\n", i, x_old[i]);
 				}
 								
 				MPI_Send(x_old , sizeOfMatrix, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
@@ -262,10 +247,9 @@ int main(int argc, char *argv[])
 				for(i=rank*rows2Fill;i<(rank+1)*rows2Fill;i++)
 				{
 				    x_old[i] = x[i];
-				    printf("Received x_old[%d] = %f\n", i, x_old[i]);
 				}
 		}
-		printf("Koniec slave\n");
+
 	  }
   
 	  
