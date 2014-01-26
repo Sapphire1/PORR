@@ -4,7 +4,7 @@
 #include "auxiliaryFunctionsOpenMP.h"
 #include "choleskyFactorizationOpenMP.h"
 
-#define REPEAT 10
+#define REPEAT 1
 
 void runAlgorithm(double **A, double *b, int problemSize) {
 	double *x,*times;
@@ -17,7 +17,8 @@ void runAlgorithm(double **A, double *b, int problemSize) {
 
 	/*powtórz algorytm REPEAT razy*/
 	for(k=0; k < REPEAT; k++) {
-		times[k] = runAlgorithmCholeskyParallel(A, b, problemSize, x);
+	  	    printf("Wywolanie %d\n", k);
+	    times[k] = runAlgorithmCholeskyParallel(A, b, problemSize, x);
 
 	    for(i=0; i<problemSize; i++)
 	    {

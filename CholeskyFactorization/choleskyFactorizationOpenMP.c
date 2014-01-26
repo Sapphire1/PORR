@@ -23,7 +23,7 @@ void choleskyParallel(int size, double** inputMatrix, double **matrixL) {
 
 		partOfResult = inputMatrix[i][i] - tempSum;
 		matrixL[i][i] = sqrt(partOfResult);
-
+		//printf("%d\t",i);
 
 		/*obliczanie elementów poza przekątną*/
 		#pragma omp parallel for schedule (static) private(j, k, partOfResult, tempSum) firstprivate(i)
@@ -103,22 +103,22 @@ double runAlgorithmCholeskyParallel(double **inputMatrix, double *b, int size, d
 
     matrixTranspositionParallel(size, factorizedMatrix, factorizedMatrixTrans);
 
-    //printf("Sfaktoryzowana transponowana macierz Choleskiego (U): \n");
+    printf("Sfaktoryzowana transponowana macierz Choleskiego (U): \n");
     //print2DArray(factorizedMatrixTrans, size, size);
 
 
     forwardSolutionPhaseParallel(size, factorizedMatrixTrans, b, y);
-    //printf("\nWynik po forwardSolutionPhase: \n");
+    printf("\nWynik po forwardSolutionPhase: \n");
     //print1DArray(y, size);
 
 
     backwardSolutionPhaseParallel(size, factorizedMatrix, y, x);
-    //printf("\nWynik po backwardSolutionPhase: \n");
+    printf("\nWynik po backwardSolutionPhase: \n");
     //print1DArray(x, size);
 
     timeConsumed = (double)(time(NULL) - start);//POMIAR CZASU END
 
-    //printf("\nSprawdzenie rozwiązania: \n");
+    printf("\nSprawdzenie rozwiązania: \n");
     //checkSolution(inputMatrix, x, b, size);
 
 

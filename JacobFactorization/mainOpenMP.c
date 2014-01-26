@@ -5,7 +5,7 @@
 #include <time.h>
 
 
-#define sizeOfMatrix 10000
+#define sizeOfMatrix 1000
 
 void generateMatrixA(double** A, double* b)
 {

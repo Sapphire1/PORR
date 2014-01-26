@@ -4,7 +4,7 @@
 #include "auxiliaryFunctions.h"
 #include "choleskyFactorization.h"
 
-#define REPEAT 10
+#define REPEAT 1
 
 void runAlgorithm(double **A, double *b, int problemSize) {
 	double *x,*times;
