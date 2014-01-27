@@ -5,13 +5,12 @@
 #include <mpi.h>
 
 
-//#define sizeOfMatrix 4096
-#define sizeOfMatrix 40
+#define sizeOfMatrix 4000
 #define iterations 50
 void jacobFactorization(double** A, double** D, double** M, double** sumLU, double* x, double* x_old, double* Mx, double* N, double* b, int startRow, int endRow)
 {
 	int i,j;
-	printf("Faktoryzacja\n");
+	//printf("Faktoryzacja\n");
 		
 	    	for(i=startRow;i<endRow;i++)
 	    	{
@@ -120,8 +119,12 @@ int main(int argc, char *argv[])
 	double** z;
 	double* x_temp = (double*) malloc(sizeOfMatrix*sizeof(double));
 	int limit;
-	//double* x_temp =(double*)malloc((sizeOfMatrix/numprocs) * sizeof(double));
 	int t=0;
+	 
+	MPI_Datatype  PartMat;  
+	MPI_Type_contiguous(rows2Fill*sizeOfMatrix, MPI_DOUBLE, &PartMat);
+	MPI_Type_commit(&PartMat);
+	
 	for(i = 0; i < sizeOfMatrix; i++)
 	{
 		A[i] = (double*)malloc(sizeOfMatrix * sizeof(double));
@@ -137,10 +140,10 @@ int main(int argc, char *argv[])
 	{
 		fprintf(stderr, "out of memory\n");
 	}
+	
 	if (rank == 0) 
-	{
-		//printf("Master\n");
-		for (counter=0;counter<1;counter++)
+	{	
+		for(counter=0; counter<10;counter++)
 		{
 			rows2Fill = sizeOfMatrix/numprocs;
 			generateMatrixA(A, b);
@@ -148,17 +151,15 @@ int main(int argc, char *argv[])
 			for(i = 1; i < numprocs; i++) 
 			{	
 				sended=0;
-				// przesylanie wiersz po wierszu... moze sprobowac przeslac wszystkie na raz
 				while(sended<rows2Fill)
 				{
 					MPI_Send(A[i*rows2Fill+sended], sizeOfMatrix, MPI_DOUBLE, i, 0, MPI_COMM_WORLD);
 					sended++;
 				}
-
+  
 				MPI_Send(b, sizeOfMatrix, MPI_DOUBLE, i, 0, MPI_COMM_WORLD);
 			}
-			
-			// dane sa przeslane dobrze, teraz trzeba zrobic faktoryzacje we wszystkich watkach
+			time_t start = time(NULL);
 			jacobFactorization(A, D, M, sumLU, x, x_old, Mx, N, b,0,rows2Fill);
 			for(iter=iterations;iter>0;iter--)
 			{
@@ -199,55 +200,67 @@ int main(int argc, char *argv[])
 					{
 						dbsum += A[i][j]*x_old[i];
 					}
-					
-					error += pow( dbsum-b[j], 2);
+					error += pow(dbsum-b[j], 2);
 					dbsum=0;
 				}
 				bladKoncowy=sqrt(error);
 				error=0;
 				bladLaczny+=bladKoncowy;
-				printf("Blad : %f\n", bladKoncowy);
-				if(bladKoncowy>0.1)
-				    printf("Blad obliczen jest za duzy!\n");
+				for(i = 1; i < numprocs; i++) 
+					MPI_Send(&bladKoncowy, 1, MPI_DOUBLE, i, 0, MPI_COMM_WORLD);
+				
+				if(bladKoncowy>0.01);
+				//    printf("Blad obliczen jest za duzy!\n");
+				else 
+				{
+				  printf("Blad : %f\n", bladKoncowy);
+				  printf("Czas trwania: %.2f\n", (double)(time(NULL) - start));
+				  czasLaczny+=(double)(time(NULL) - start);
+				  break;
+				}
 			}	
-		}//for
+			
+		}
+		printf("Sredni czas : %f\n", czasLaczny/10);
 		printf("Koniec Master\n");
 	  }
 	  else
 	  {	
-		rows2Fill = sizeOfMatrix/numprocs;		
-		received=0;
-		while(received<rows2Fill)
+		for(counter=0;counter<10;counter++)
 		{
-			MPI_Recv(A[rank*rows2Fill+received], sizeOfMatrix, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD, &stat);
-			received++;
-		}
-		MPI_Recv(b, sizeOfMatrix, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD, &stat);
-		
-		jacobFactorization(A, D, M, sumLU, x, x_old, Mx, N, b,rank*rows2Fill,(rank+1)*rows2Fill);
-		for(iter=iterations;iter>0;iter--)
-		{
-				for(i=rank*rows2Fill;i<(rank+1)*rows2Fill;i++)
-				{
-				    x[i]= N[i]*b[i];
-					
-				    for(j=0; j<sizeOfMatrix; j++)
-				    {
-					Mx[i] = M[i][j]*x_old[j];
-					x[i] +=Mx[i];
-				    }
-				}
-				for(i=rank*rows2Fill;i<(rank+1)*rows2Fill;i++)
-				{
-				    x_old[i] = x[i];
-				}
-								
-				MPI_Send(x_old , sizeOfMatrix, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
-				MPI_Recv(x_old, sizeOfMatrix, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD, &stat);
-				for(i=rank*rows2Fill;i<(rank+1)*rows2Fill;i++)
-				{
-				    x_old[i] = x[i];
-				}
+			rows2Fill = sizeOfMatrix/numprocs;		
+			received=0;
+			while(received<rows2Fill)
+			{
+				MPI_Recv(A[rank*rows2Fill+received], sizeOfMatrix, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD, &stat);
+				received++;
+			}
+			MPI_Recv(b, sizeOfMatrix, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD, &stat);
+			
+			jacobFactorization(A, D, M, sumLU, x, x_old, Mx, N, b,rank*rows2Fill,(rank+1)*rows2Fill);
+			for(iter=iterations;iter>0;iter--)
+			{
+					for(i=rank*rows2Fill;i<(rank+1)*rows2Fill;i++)
+					{
+					    x[i]= N[i]*b[i];
+						
+					    for(j=0; j<sizeOfMatrix; j++)
+					    {
+						Mx[i] = M[i][j]*x_old[j];
+						x[i] +=Mx[i];
+					    }
+					}
+					for(i=rank*rows2Fill;i<(rank+1)*rows2Fill;i++)
+					{
+					    x_old[i] = x[i];
+					}
+									
+					MPI_Send(x_old , sizeOfMatrix, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
+					MPI_Recv(x_old, sizeOfMatrix, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD, &stat);
+					MPI_Recv(&bladKoncowy, 1, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD, &stat);
+					if(bladKoncowy<0.01)
+					  break;
+			}
 		}
 
 	  }
